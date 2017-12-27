@@ -8,3 +8,7 @@ class InvalidUrlPattern(BaseUrl4ApiException):
 
 class UnrecognisedProtocol(BaseUrl4ApiException):
     pass
+
+
+class InvalidInputPattern(BaseUrl4ApiException):
+    pass
