@@ -8,7 +8,8 @@ class TestSplit(unittest.TestCase):
         """Name: TestSplit.test_split_all_ok
         """
         processed = url4api.split(
-            'https://example.com:30/3.0/product/list?boom=1')
+            'https://example.com:30/3.0/product/list?boom=1',
+            pattern="<version:double>/<...>")
 
         self.assertEqual(processed.version, 3.0)
         self.assertEqual(processed.url, 'product/list?boom=1')
@@ -16,7 +17,8 @@ class TestSplit(unittest.TestCase):
         self.assertEqual(processed.domain, 'example.com')
 
         processed = url4api.split(
-            'https://example.com/3.14/product/list?boom=13.2')
+            'https://example.com/3.14/product/list?boom=13.2',
+            pattern="<version:double>/<...>")
 
         self.assertEqual(processed.version, 3.14)
         self.assertEqual(processed.url, 'product/list?boom=13.2')

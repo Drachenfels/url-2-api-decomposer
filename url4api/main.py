@@ -65,7 +65,7 @@ def split(url, pattern=None):
     Where type can be number, double, string or bool (default: string).
     """
     if pattern is None:
-        pattern = '/<version:double>/<...>'
+        pattern = '<...>'
 
     parsed_url = urlparse(url)
 
