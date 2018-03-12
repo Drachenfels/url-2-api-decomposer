@@ -13,6 +13,13 @@ setup(
         'Tools extracts constant elements from url (for example version)'
     ),
     long_description=readme(),
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3 :: Only',
+        'Topic :: Software Development :: Version Control :: Git',
+        'Topic :: Utilities',
+    ],
     test_suite='nose.collector',
     tests_require=['nose'],
     url='https://github.com/Drachenfels/url2vapi',
