@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='url2vapi',
-    version='1.0',
+    version='1.2',
     description=(
         'Tools extracts constant elements from url (for example version)'
     ),

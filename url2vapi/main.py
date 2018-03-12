@@ -24,9 +24,6 @@ def parse_pattern(pattern):
         'bool': bool,
     }
 
-    if not pattern:
-        raise exceptions.InvalidInputPattern("Pattern cannot be empty")
-
     # first group is optional and it is prefix, this group precedes < that
     # marks beginning of the variable
     # then follows mandatory name of the variable
@@ -36,10 +33,12 @@ def parse_pattern(pattern):
     # defaults to .)
     # then follows optional suffix (should behind closing >)
     elements = re.findall(
-        r'([\w,._-]+)?<([\w_\.]+)(:([\w\[\]]+))?(:([\w,.|_-]+))?>([\w,._-]+)?',
+        r'([\w,._-]+)?<([\w_]+)(:([\w\[\]]+))?(:([\w,.|_-]+))?>([\w,._-]+)?',
         pattern)
 
     groups = []
+    prefixes = []
+    suffixes = []
 
     for (
             prefix, element, separator, item_type,
@@ -80,7 +79,48 @@ def parse_pattern(pattern):
         del separator
         del delimiter
 
+        if prefix:
+            ambigous_prefix = [
+                val for val in prefixes if val in prefix]
+
+            if ambigous_prefix:
+                raise exceptions.InvalidInputPattern(
+                    "Prefix {} is conflicting with prefix {} "
+                    "(use more distinct values)".format(
+                        prefix, ",".join(ambigous_prefix)))
+
+            prefixes.append(prefix)
+
+        if suffix:
+            ambigous_suffix = [
+                val for val in suffixes if val in suffix]
+
+            if ambigous_suffix:
+                raise exceptions.InvalidInputPattern(
+                    "Suffix {} is conflicting with suffix {} "
+                    "(use more distinct values)".format(
+                        suffix, ",".join(ambigous_suffix)))
+
+            suffixes.append(suffix)
+
     return groups
+
+
+def _parse_section(value, cast_to, prefix, suffix):
+    if prefix and not value.startswith(prefix):
+        return
+    elif prefix:
+        value = value[len(prefix):]
+
+    if suffix and not value.endswith(suffix):
+        return
+    elif suffix:
+        value = value[:len(suffix) * -1]
+
+    try:
+        return cast_to(value)
+    except (NameError, TypeError, ValueError):
+        pass
 
 
 def split(url, pattern=''):
@@ -105,78 +145,56 @@ def split(url, pattern=''):
     """
     parsed_url = urlparse(url)
 
-    if pattern == '' or not pattern.endswith('<...>'):
-        pattern += '<...>' if not pattern or pattern[-1] == '/' else '/<...>'
-
-    if parsed_url.scheme not in ('http', 'https'):
-        raise exceptions.UnrecognisedProtocol(
-            "Only http or https is ok with us")
+    url = parsed_url.path[1:]
 
     groups = parse_pattern(pattern)
-
-    url = parsed_url.path
-
-    url = url[1:] if url.startswith('/') else url
+    sections = url.split('/')
 
     kwargs = {}
 
-    while url:
+    for group_name in [tmp[0] for tmp in groups]:
+        kwargs[group_name] = None
+
+    while sections:
+        section = sections.pop(0)
+
+        # pylint: disable=consider-using-enumerate
+        for idx in range(len(groups)):
+        # pylint: enable=consider-using-enumerate
+            name, cast_to, prefix, suffix = groups[idx]
+
+            val = _parse_section(section, cast_to, prefix, suffix)
+
+            if val is not None:
+                kwargs[name] = {
+                    'value': val,
+                    'prefix': prefix,
+                    'suffix': suffix,
+                }
+                groups.pop(idx)
+                break
+
         if not groups:
             break
 
-        name, cast_to, prefix, suffix = groups.pop(0)
+    remainder = '/'.join(sections)
 
-        idx = url.find('/')
-
-        if name == '...':
-            if groups:
-                raise exceptions.InvalidInputPattern(
-                    "Argpars <...> cannot be followed by any other group")
-
-            value = url
-            url = ''
-            name = 'remainder'
-
-        else:
-            value = url[:idx]
-            url = url[idx + 1:]
-
-            value = value[len(prefix):] \
-                if prefix and value.startswith(prefix) else value
-            value = value[:len(suffix) * -1] \
-                if suffix and value.endswith(suffix) else value
-
-            try:
-                value = cast_to(value)
-            except (NameError, TypeError, ValueError):
-                raise exceptions.InvalidUrlPattern(
-                    "Unable to cast value ({}) using ({})".format(
-                        value, cast_to))
-
-        kwargs[name] = {
-            'value': value,
-            'prefix': prefix,
-            'suffix': suffix,
-        }
-
-    if 'remainder' not in kwargs:
-        kwargs['remainder'] = {
-            'value': '',
-        }
+    if not remainder:
+        remainder = '/'
 
     if parsed_url.params:
-        kwargs['remainder']['value'] += ';' + parsed_url.params
+        remainder += ';' + parsed_url.params
 
     elif parsed_url.query:
-        kwargs['remainder']['value'] += '?' + parsed_url.query
+        remainder += '?' + parsed_url.query
 
     elif parsed_url.fragment:
-        kwargs['remainder']['value'] += '#' + parsed_url.fragment
+        remainder += '#' + parsed_url.fragment
 
     return models.ApiUrl(
         protocol=parsed_url.scheme,
         domain=parsed_url.hostname,
         port=parsed_url.port,
-        remainder=kwargs.pop('remainder')['value'],
+        remainder=remainder,
         **kwargs
     )

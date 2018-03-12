@@ -4,6 +4,86 @@ import url2vapi
 
 
 class TestSplit(unittest.TestCase):
+    def test_spliting_optional_version(self):
+        """Name: TestSplit.test_spliting_optional_version
+        """
+        parsed = url2vapi.split(
+            'https://example.com:5000/', pattern="<version:double>")
+
+        self.assertEqual(parsed.remainder, '/')
+        self.assertEqual(parsed.version, None)
+
+        parsed = url2vapi.split(
+            'https://example.com:5000/3.0', pattern="<version:double>")
+
+        self.assertEqual(parsed.remainder, '/')
+        self.assertEqual(parsed.version['value'], 3.0)
+
+    def test_skip_prefixed_values(self):
+        """Name: TestSplit.test_skip_prefixed_values
+        """
+        parsed = url2vapi.split(
+            'https://example.com:5000/m2.1/mittens',
+            pattern="v<version:double>/m<minor_version:double>/<stuff>")
+
+        self.assertEqual(parsed.version, None)
+        self.assertEqual(parsed.minor_version['value'], 2.1)
+        self.assertEqual(parsed.stuff['value'], 'mittens')
+
+        parsed = url2vapi.split(
+            'https://example.com:5000/v2.1/mittens',
+            pattern="v<version:double>/m<minor_version:double>/<stuff>")
+
+        self.assertEqual(parsed.version['value'], 2.1)
+        self.assertEqual(parsed.minor_version, None)
+        self.assertEqual(parsed.stuff['value'], 'mittens')
+
+        parsed = url2vapi.split(
+            'https://example.com:5000/v2.1/m3.4/mittens',
+            pattern="v<version:double>/m<minor_version:double>/<stuff>")
+
+        self.assertEqual(parsed.version['value'], 2.1)
+        self.assertEqual(parsed.minor_version['value'], 3.4)
+        self.assertEqual(parsed.stuff['value'], 'mittens')
+
+        parsed = url2vapi.split(
+            'https://example.com:5000/m3.4/v2.1/mittens',
+            pattern="v<version:double>/m<minor_version:double>/<stuff>")
+
+        self.assertEqual(parsed.version['value'], 2.1)
+        self.assertEqual(parsed.minor_version['value'], 3.4)
+        self.assertEqual(parsed.stuff['value'], 'mittens')
+
+    def test_split_empty_url(self):
+        """Name: TestSplit.test_split_empty_url
+        """
+        parsed = url2vapi.split(
+            'https://example.com:5000/', pattern="<version:double>")
+
+        self.assertEqual(parsed.remainder, '/')
+
+        parsed = url2vapi.split(
+            'https://example.com:5000', pattern="<version:double>")
+
+        self.assertEqual(parsed.remainder, '/')
+
+    def test_split_non_complete_url(self):
+        """Name: TestSplit.test_split_non_complete_url
+        """
+        parsed = url2vapi.split(
+            '/3.0/product/list?boom=1', pattern="<version:double>")
+
+        self.assertEqual(parsed.version['value'], 3.0)
+        self.assertEqual(parsed.remainder, 'product/list?boom=1')
+        self.assertEqual(parsed.port, None)
+        self.assertEqual(parsed.domain, None)
+
+        parsed = url2vapi.split('/')
+
+        self.assertEqual(parsed.remainder, '/')
+        self.assertEqual(parsed.port, None)
+        self.assertEqual(parsed.domain, None)
+
     def test_split_all_ok(self):
         """Name: TestSplit.test_split_all_ok
         """
@@ -24,12 +104,6 @@ class TestSplit(unittest.TestCase):
         self.assertEqual(parsed.remainder, 'product/list?boom=13.2')
         self.assertEqual(parsed.port, None)
         self.assertEqual(parsed.domain, 'example.com')
-
-    def test_split_errors(self):
-        """Name: TestSplit.test_split_errors
-        """
-        with self.assertRaises(url2vapi.exceptions.UnrecognisedProtocol):
-            url2vapi.split('ftp://example.com:30/3.0/product/list?boom=1')
 
     def test_more_complex_splitting(self):
         """Name: TestSplit.test_more_complex_splitting
@@ -53,7 +127,7 @@ class TestSplit(unittest.TestCase):
         parsed = url2vapi.split(
             'https://example.com/animal/lion/', pattern='/<key>/<value>/')
 
-        self.assertEqual(parsed.remainder, '')
+        self.assertEqual(parsed.remainder, '/')
         self.assertEqual(parsed.domain, 'example.com')
         self.assertEqual(parsed.port, None)
 
@@ -73,7 +147,7 @@ class TestSplit(unittest.TestCase):
         parsed = url2vapi.split(
             'https://example.com/animal/lion/', pattern='<key>/<value>')
 
-        self.assertEqual(parsed.remainder, '')
+        self.assertEqual(parsed.remainder, '/')
         self.assertEqual(parsed.domain, 'example.com')
         self.assertEqual(parsed.port, None)
 
