@@ -1,9 +1,9 @@
 class ApiUrl(object):
-    def __init__(self, protocol, port, domain, url, **kwargs):
+    def __init__(self, protocol, port, domain, remainder, **kwargs):
         self.protocol = protocol
         self.port = port
         self.domain = domain
-        self.url = url
+        self.remainder = remainder
         self.kwargs = kwargs
 
     def __getattr__(self, key):
@@ -14,7 +14,7 @@ class ApiUrl(object):
             'protocol': self.protocol,
             'domain': self.domain,
             'port': self.port,
-            'url': self.url,
+            'remainder': self.remainder,
         }
 
         for key, value in self.kwargs.items():
