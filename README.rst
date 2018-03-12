@@ -7,7 +7,7 @@ pattern.  Returning result is new object that contains all matched variables +
 reminding part of the url. Package for most part uses standard urllib.parse
 with a bits added on top of it.
 
-## Example usage:
+Example usage:
 
     >>> import url2vapi
 
@@ -29,14 +29,14 @@ with a bits added on top of it.
     >>> print(url2vapi.split('http://www.example.com/3.0/letters/c/', pattern='<version:double>/<namespace>').as_dict())
     {'port': None, 'namespace': {'prefix': '', 'suffix': '', 'value': 'letters'}, 'version': {'prefix': '', 'suffix': '', 'value': 3.0}, 'domain': 'www.example.com', 'protocol': 'http', 'remainder': 'c/'}
 
-# or something more exotic:
+or something more exotic:
 
     >>> print(url2vapi.split(
         'http://www.example.com/v3_1.1_0.1-b1/3/a/',
         pattern='v<version:tuple[double]:_>-b1>/<namespace_number:number>').as_dict())
     {'port': None, 'version': {'prefix': 'v', 'suffix': '-b1', 'value': (3.0, 1.1, 0.1)}, 'domain': 'www.example.com', 'protocol': 'http', 'remainder': 'a/', 'namespace_number': {'prefix': '', 'suffix': '', 'value': 3}}
 
-## Available patterns
+Available patterns
 
 Pattern is a string that should contain groups, each group is defined as follows:
 
@@ -51,7 +51,7 @@ Where:
     - tuple can specify subtype in a form `tuple[double]` or `tuple[bool]` but not `tuple[tuple]`
     - optional_suffix - is any alphanumeric range of characters, defaults to '' (with addition of some common characters like `_-\.,`)
 
-## Testing
+Testing
 
 Git clone repository, pip install dependency and then run nosetests by simply `./bin/run_tests.sh` (this will open browser with coverage result)
 
