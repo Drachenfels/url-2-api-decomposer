@@ -1,6 +1,7 @@
 *.sw[po]
 .coverage
 .noseids
+htmlcov/
 cover/
 
 # Setuptools distribution folder.
